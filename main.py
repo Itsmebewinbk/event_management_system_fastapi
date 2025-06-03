@@ -4,8 +4,10 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from app.response import ErrorResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import APIRouter
 from sqladmin import Admin
+from app.core.database import sync_engine
+from app.admin import EventAdmin, AttendeeAdmin
+from app.api import events
 
 app = FastAPI()
 
@@ -18,8 +20,8 @@ app.add_middleware(
 )
 
 
+# exception_handling
 
-#exception_handling
 
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc: HTTPException):
@@ -53,20 +55,21 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     return ErrorResponse(message=message)
 
 
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the Event Management API"}
 
-# sql_admin
+
+admin = Admin(
+    app,
+    sync_engine,
+    title="Event Management System",
+)
+admin.add_view(EventAdmin)
+admin.add_view(AttendeeAdmin)
 
 
-# admin = Admin(
-#     app,
-#     sync_engine,
-#     authentication_backend=AdminAuth(secret_key=SECRET_KEY),
-#     title="Event Management System",
-# )
-# admin.add_view(UserAdmin)
-
-    
-
+app.include_router(events.router, prefix="/api/v1")
 
 # # api/v1/
 # app.include_router(urls_router, prefix="/api/v1/users")

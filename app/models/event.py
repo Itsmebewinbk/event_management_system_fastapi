@@ -1,6 +1,6 @@
-from sqlalchemy import Integer, String, ForeignKey, DateTime,UniqueConstraint
+from sqlalchemy import Integer, String, ForeignKey, DateTime, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from core.database import Base
+from app.core.database import Base
 from datetime import datetime
 
 
@@ -17,6 +17,7 @@ class TimesStampedModel(Base):
 
 class Event(TimesStampedModel):
     __tablename__ = "events"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255))
     location: Mapped[str] = mapped_column(String(255))
     start_time: Mapped[datetime] = mapped_column(
@@ -28,8 +29,8 @@ class Event(TimesStampedModel):
     max_capacity: Mapped[int] = mapped_column(Integer)
     attendee_count: Mapped[int] = mapped_column(Integer)
 
-    attendee : Mapped[list["Attendee"]] = relationship(
-        "Attendee",back_populates="events", passive_deletes=True
+    attendees: Mapped[list["Attendee"]] = relationship(
+        "Attendee", back_populates="event", passive_deletes=True
     )
 
     def __repr__(self):
@@ -43,22 +44,20 @@ class Event(TimesStampedModel):
     def capacity_reached(self) -> bool:
         return self.attendee_count >= self.max_capacity
 
+
 class Attendee(TimesStampedModel):
     __tablename__ = "attendees"
-    __table_args__ = (
-        UniqueConstraint("event_id", "email", name="unique_event_email"),
-    )
+    __table_args__ = (UniqueConstraint("event_id", "email", name="unique_event_email"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
 
     name: Mapped[str] = mapped_column(String(255))
-    email: Mapped[str] = mapped_column(String(255)) 
+    email: Mapped[str] = mapped_column(String(255))
     event_id: Mapped[int] = mapped_column(
-        Integer,
-        ForeignKey("events.id", ondelete="CASCADE"),
-        nullable=False
+        Integer, ForeignKey("events.id", ondelete="CASCADE"), nullable=False
     )
 
     event: Mapped["Event"] = relationship("Event", back_populates="attendees")
-
 
     def __repr__(self):
         return f"Attendee(id={self.name}, email={self.email}"
